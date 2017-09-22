@@ -137,7 +137,7 @@
 
     - name: Change default shell if needed
       become: yes
-      command: chsh -s /usr/bin/zsh {{ ansible_user }}
+      command: chsh -s /bin/zsh {{ ansible_user }}
       when: ansible_env.SHELL != '/bin/zsh'
 
     - name: Grab dotfiles
@@ -179,3 +179,12 @@
       args:
         chdir: ~/.vim/bundle/YouCompleteMe
         creates: ~/.vim/bundle/YouCompleteMe/third_party/ycmd/ycm_core.so
+
+
+    - name: Get Latest Hookups from Damian Conway
+      get_url:
+        url: https://raw.githubusercontent.com/thoughtstream/Damian-Conway-s-Vim-Setup/master/plugin/{{ item }}.vim
+        dest: ~/.vim/plugin/{{ item }}.vim
+      with_items:
+        - autoswap_mac_linux
+        - dragvisuals
