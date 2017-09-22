@@ -70,6 +70,7 @@
         - wget
         - zsh
         - strace
+        - hub
         - tcpdump
         - kernel-devel
         - iftop
@@ -101,21 +102,6 @@
       gem:
         name: bundler
         state: present
-
-    - name: Get the hub utils from github
-      git:
-        repo: https://github.com/github/hub.git
-        dest: ~/.hub
-      register: hub_dl
-
-    - name: Make install hub
-      become: yes
-      make:
-        target: install
-        params:
-          prefix: /usr/local
-        chdir: /home/{{ ansible_user }}/.hub/
-      when: hub_dl|changed
 
     - name: Make zsh dir for completions
       file:
