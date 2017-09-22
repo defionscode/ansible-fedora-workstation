@@ -123,8 +123,8 @@
 
     - name: Change default shell if needed
       become: yes
-      command: chsh -s /bin/zsh {{ ansible_user }}
-      when: ansible_env.SHELL != '/bin/zsh'
+      command: chsh -s {{ lookup('pipe', 'which zsh') }} {{ ansible_user }}
+      when: ansible_env.SHELL != '/usr/bin/zsh'
 
     - name: Grab dotfiles
       git:
