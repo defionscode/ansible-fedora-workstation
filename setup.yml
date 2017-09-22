@@ -1,0 +1,181 @@
+- name: Configure Fedora 26 Workstation
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Install selinux python bindings
+      become: yes
+      dnf:
+        name: libselinux-python 
+        state: present
+
+    - name: Add sysdig repo gpg key
+      become: yes
+      rpm_key:
+        key: https://s3.amazonaws.com/download.draios.com/DRAIOS-GPG-KEY.public
+        state: present
+
+    - name: Add sysdig repo
+      become: yes
+      get_url:
+        url: https://s3.amazonaws.com/download.draios.com/stable/rpm/draios.repo
+        dest: /etc/yum.repos.d/draios.repo 
+ 
+    - name: Add Google Chrome Repo
+      become: yes
+      copy:
+        src: google-chrome.repo
+        dest: /etc/yum.repos.d/google-chrome.repo
+
+    - name: Install spotify repo
+      become: yes
+      command: dnf config-manager --add-repo=http://negativo17.org/repos/fedora-spotify.repo
+      args:
+        creates: /etc/yum.repos.d/fedora-spotify.repo
+
+    - name: Install RPM Fusion Repo
+      become: yes
+      dnf:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-26.noarch.rpm
+        - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-26.noarch.rpm
+
+    - name: Install a ton of packages
+      become: yes
+      dnf:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - google-chrome-stable
+        - vim-enhanced 
+        - spotify-client
+        - docker-common
+        - shutter
+        - gimp 
+        - corebird
+        - ansible
+        - htop
+        - lsof
+        - nmap  
+        - git
+        - nodejs
+        - git-core
+        - traceroute
+        - socat
+        - meld
+        - pandoc
+        - tree
+        - nmap
+        - wget
+        - zsh
+        - strace
+        - tcpdump
+        - kernel-devel
+        - iftop
+        - sysdig
+        - kdenlive
+        - golang
+        - ruby
+        - vlc
+        - cmake
+        - gcc
+        - gcc-c++
+        - automake
+        - python-devel
+        - python3-devel
+
+
+    - name: Install some pip stuffs
+      become: yes
+      pip:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - virtualenv
+        - virtualenvwrapper
+        - awscli
+
+    - name: Install bundler
+      become: yes
+      gem:
+        name: bundler
+        state: present
+
+    - name: Get the hub utils from github
+      git:
+        repo: https://github.com/github/hub.git
+        dest: ~/.hub
+      register: hub_dl
+
+    - name: Make install hub
+      become: yes
+      make:
+        target: install
+        params:
+          prefix: /usr/local
+        chdir: /home/{{ ansible_user }}/.hub/
+      when: hub_dl|changed
+
+    - name: Make zsh dir for completions
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - ~/.zsh
+        - ~/.zsh/completions
+
+    - name: Get ZSH completion from hub
+      get_url:
+        url: https://raw.githubusercontent.com/github/hub/master/etc/hub.zsh_completion
+        dest: ~/.zsh/completions/_hub
+
+    - name: Grab OMZ
+      git:
+        repo: https://github.com/robbyrussell/oh-my-zsh
+        dest: ~/.oh-my-zsh
+
+    - name: Change default shell if needed
+      become: yes
+      command: chsh -s /usr/bin/zsh {{ ansible_user }}
+      when: ansible_env.SHELL != '/bin/zsh'
+
+    - name: Grab dotfiles
+      git:
+        repo: git@github.com:defionscode/dotfiles.git
+        dest: ~/Repos/dotfiles
+
+    - name: Create needed symlinks 
+      file:
+        state: link
+        src: ~/Repos/dotfiles/{{ item }}
+        dest: ~/{{ item }} 
+      with_items:
+        - .vimrc
+        - .gitconfig
+        - .zshrc
+
+    - name: Set VIM bundle dirs
+      file:
+        state: directory
+        path: "{{ item }}"
+      with_items:
+        - ~/.vim
+        - ~/.vim/bundle
+        - ~/.vim/plugin
+
+    - name: Get Vundle
+      git:
+        accept_hostkey: yes
+        clone: yes
+        dest: ~/.vim/bundle/Vundle.vim
+        repo: https://github.com/VundleVim/Vundle.vim.git
+
+    - name: invoke vundle to install plugins
+      command: vim -E -s -c "source ~/.vimrc" -c PluginInstall -c qa
+
+    - name: Install YCM
+      command: ./install.py --tern-completer --gocode-completer
+      args:
+        chdir: ~/.vim/bundle/YouCompleteMe
+        creates: ~/.vim/bundle/YouCompleteMe/third_party/ycmd/ycm_core.so
