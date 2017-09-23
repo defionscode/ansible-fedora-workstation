@@ -61,6 +61,7 @@
         - git
         - nodejs
         - git-core
+        - tilix
         - traceroute
         - socat
         - meld
